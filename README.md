@@ -5,7 +5,7 @@ mposter is a tool to HTTP-POST massive amounts of data one row at a time
 Think of `cat ids.list | while read id; do echo ${id}; curl --fail -XPOST http://host:port/post/${id}; done` with extra conveniences: 
 
 * greppable OK/ERR output
-* progress tickes to stderr 
+* progress reported to stderr 
 * rate limiting
 
 ### Use case
