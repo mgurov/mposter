@@ -84,3 +84,29 @@ Not supported. Might be added in the future as a header/cookie parameter. For no
 ## Parallelism 
 
 The calls are peformed strictly consequal. Next call is made as soon as the previous finished, unless the rate limiting above kicks in.
+
+## --tick 100
+
+Prints the status every 100 lines (default) to stderr. Set to 0 to disable.
+
+## --output
+
+Every input line would be printed followed by `OK` for http 2xx response from the target URL or `ERR` and some description of this error if the call wasn't that succesfull. 
+
+`--output` defaults to `-`, which means stdout. 
+
+## --stop-on-initial-error 1
+
+A number of initial calls failed to abort the run. No effect whatsover after receving a HTTP 2xx response.
+
+## --stop-on-error 0
+
+If set to a number different from 0 would stop the run upon receiving a given number of consequitive call failures.
+
+## --stop-on-http-code 4xx
+
+Comma separated list of http codes to abort the run immediately upon receiving. Comma separated. 4xx means all starting with 4. 
+
+## circuit breaker
+
+Not implemented, but thought of. Would look along the lines of `--break-circuit-open-on-count=10 --break-circuit-delay=1m`
