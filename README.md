@@ -64,7 +64,7 @@ Allows to skip the column names header by setting it to 1 or 2 from the default 
 By default, the sole value from the input line is added to the url provided. Go templating allows for more flexible URL structures: 
 
 ````
-$ echo a,b | mposter --url=http://host:port/path/{{.[0]}}/subpath/{{.[1]}}
+$ echo a,b | mposter --url=http://host:port/path/{{.f1}}/subpath/{{.f2}}
 ````
 
 would produce a call to `http://host:port/path/a/subpath/b`
