@@ -10,7 +10,7 @@ Think of `cat ids.list | while read id; do echo ${id}; curl --fail -XPOST http:/
 
 ### Use case
 
-While working in a microservice environment, a recurring task my teams face is to perform certain actions for large volumes of entities, e.g.: 
+A recurring task my teams face is to perform certain actions for large volumes of entities, e.g.: 
 
 * publish historical data for a newly created data interface
 * correct some entities
