@@ -81,6 +81,18 @@ func TestMultipleParametersSupportCommaSeparated(t *testing.T) {
 		"POST /path/C/sub/3\n")
 }
 
+func TestShouldReportNon200Statuses(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "A\nB\nC"
+		run.server.PathToResponseCode["/B"] = 500
+		run.server.PathToResponseCode["/C"] = 404
+	})
+
+	result.AssertHttpAccessLog("POST /A\nPOST /B\nPOST /C\n")
+	result.AssertOutput("A OK\nB ERR HTTP 500\nC ERR HTTP 404\n")
+}
+
 func TestShouldContinueOnError(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
@@ -89,7 +101,7 @@ func TestShouldContinueOnError(t *testing.T) {
 	})
 
 	result.AssertHttpAccessLog("POST /A\nPOST /B\nPOST /C\n")
-	result.AssertOutput("A OK\nB ERR\nC OK\n")
+	result.AssertOutput("A OK\nB ERR HTTP 500\nC OK\n")
 }
 
 func TestShouldStopOnConsecutiveErrors(t *testing.T) {
@@ -101,7 +113,7 @@ func TestShouldStopOnConsecutiveErrors(t *testing.T) {
 		run.suppressNoErrCheck = true
 	})
 
-	result.AssertOutput("A OK\nfail ERR\nfail ERR\n")
+	result.AssertOutput("A OK\nfail ERR HTTP 500\nfail ERR HTTP 500\n")
 }
 
 func TestShouldNotStopOnNonConsecutiveErrors(t *testing.T) {
@@ -112,7 +124,7 @@ func TestShouldNotStopOnNonConsecutiveErrors(t *testing.T) {
 		run.runParams.stopOnErrorCount = 2
 	})
 
-	result.AssertOutput("A OK\nfail ERR\nB OK\nfail ERR\nC OK\n")
+	result.AssertOutput("A OK\nfail ERR HTTP 500\nB OK\nfail ERR HTTP 500\nC OK\n")
 }
 
 func whenRan(t *testing.T, input, path string) string {

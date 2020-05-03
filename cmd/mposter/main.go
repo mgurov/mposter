@@ -100,7 +100,7 @@ func run(params runParams) error {
 			fmt.Fprintf(params.output, "OK\n")
 			consecutiveErrCount = 0
 		} else {
-			fmt.Fprintln(params.output, "ERR") //TODO: status code.
+			fmt.Fprintln(params.output, "ERR HTTP", resp.StatusCode)
 			if consecutiveErrCount++; params.stopOnErrorCount > 0 && consecutiveErrCount >= params.stopOnErrorCount {
 				//repeated error count exceeded
 				return fmt.Errorf("Got %d errors in a row, bailing out", consecutiveErrCount)
