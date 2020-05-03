@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -90,10 +91,14 @@ func (s TestServer) AccessLog() string {
 	return s.handler.log.String()
 }
 
-func (s *TestServer) Close() {
-	s.server.Shutdown(nil)
+func (s *TestServer) Shutdown() {
+	s.server.Shutdown(context.Background())
 }
 
 func (s *TestServer) ReturnEmptyResponseWithHttpStatus(path string, responseCode int) {
 	s.PathToHandler[path] = MakeEmptyResponseHandler(responseCode)
+}
+
+func (s *TestServer) RegisterHandler(path string, handler func(http.ResponseWriter, *http.Request)) {
+	s.PathToHandler[path] = handler
 }

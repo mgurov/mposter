@@ -14,7 +14,7 @@ import (
 func TestSimpleCalling(t *testing.T) {
 
 	server := testserver.StartNewTestServer()
-	defer server.Close()
+	defer server.Shutdown()
 
 	input := `A
 B

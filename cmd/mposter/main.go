@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"time"
 )
 
 func main() {
@@ -35,6 +36,7 @@ func parseParams(params []string) (runParams, error) {
 	commandLine.StringVar(&result.url, "url", "http://localhost:8080/example/", "url to post to") //TODO: no default and fail if not specified.
 	commandLine.StringVar(&result.fieldSeparator, "separator", "", "row field separator. White space if not specified.")
 	commandLine.IntVar(&result.stopOnErrorCount, "stop-on-err-count", result.stopOnErrorCount, "Stop on consequent error results")
+	commandLine.DurationVar(&result.timeout, "timeout", 0, "http timeout, 0 (default) meaning no timeout")
 
 	return result, commandLine.Parse(os.Args[1:])
 }
@@ -77,6 +79,9 @@ func run(params runParams) error {
 	}
 
 	consecutiveErrCount := 0
+	httpClient := http.Client{
+		Timeout: params.timeout,
+	}
 
 	for scanner.Scan() {
 		nextLine := scanner.Text()
@@ -89,21 +94,30 @@ func run(params runParams) error {
 			return err
 		}
 
-		resp, err := http.Post(urlToCall, "", nil)
+		resp, err := httpClient.Post(urlToCall, "", nil)
 		if err != nil {
-			//TODO: what kind of an error?
-			//TODO: timeout thingy
-			return fmt.Errorf("Error posting to %s : %w", urlToCall, err)
-		}
-
-		if resp.StatusCode/100 == 2 {
-			fmt.Fprintf(params.output, "OK\n")
-			consecutiveErrCount = 0
+			if urlErr, ok := err.(*url.Error); ok {
+				if urlErr.Timeout() {
+					fmt.Fprintln(params.output, "ERR Timeout")
+				} else {
+					fmt.Fprintln(params.output, "ERR", urlErr)
+				}
+			} else {
+				log.Printf("wtf %#q", err)
+				return fmt.Errorf("Unexpected error posting to %s : %w", urlToCall, err)
+			}
 		} else {
-			fmt.Fprintln(params.output, "ERR HTTP", resp.StatusCode)
-			if consecutiveErrCount++; params.stopOnErrorCount > 0 && consecutiveErrCount >= params.stopOnErrorCount {
-				//repeated error count exceeded
-				return fmt.Errorf("Got %d errors in a row, bailing out", consecutiveErrCount)
+			defer resp.Body.Close()
+
+			if resp.StatusCode/100 == 2 {
+				fmt.Fprintf(params.output, "OK\n")
+				consecutiveErrCount = 0
+			} else {
+				fmt.Fprintln(params.output, "ERR HTTP", resp.StatusCode)
+				if consecutiveErrCount++; params.stopOnErrorCount > 0 && consecutiveErrCount >= params.stopOnErrorCount {
+					//repeated error count exceeded
+					return fmt.Errorf("Got %d errors in a row, bailing out", consecutiveErrCount)
+				}
 			}
 		}
 
@@ -128,6 +142,7 @@ type runParams struct {
 	output           io.Writer
 	fieldSeparator   string
 	stopOnErrorCount int
+	timeout          time.Duration
 }
 
 func newRunParams() runParams {
