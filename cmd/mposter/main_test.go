@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
+	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mgurov/mposter/internal/assertions"
 	"github.com/mgurov/mposter/internal/testserver"
@@ -127,13 +129,28 @@ func TestShouldNotStopOnNonConsecutiveErrors(t *testing.T) {
 	result.AssertOutput("A OK\nfail ERR HTTP 500\nB OK\nfail ERR HTTP 500\nC OK\n")
 }
 
+func TestShouldTimeoutOnTimeout(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "A\nlongB\nC"
+		run.runParams.timeout = 10 * time.Millisecond
+		run.server.RegisterHandler("/longB", func(w http.ResponseWriter, _ *http.Request) {
+			time.Sleep(20 * time.Millisecond)
+			w.WriteHeader(204)
+		})
+		run.runParams.stopOnErrorCount = 2
+	})
+
+	result.AssertOutput("A OK\nlongB ERR Timeout\nC OK\n")
+}
+
 func whenRan(t *testing.T, input, path string) string {
 	return whenRanWithParams(t, input, path, func(it runParams) runParams { return it })
 }
 
 func whenRanWithParams(t *testing.T, input, path string, paramsFun func(runParams) runParams) string {
 	server := testserver.StartNewTestServer()
-	defer server.Close()
+	defer server.Shutdown()
 
 	runParams := paramsFun(runParams{
 		url:    server.Addr() + path,
@@ -191,7 +208,7 @@ func execute(t *testing.T, adjuster func(*TestRun)) *TestRun {
 	adjuster(&tr)
 
 	tr.server.Start()
-	defer tr.server.Close()
+	defer tr.server.Shutdown()
 
 	if tr.runParams.url == "" {
 		tr.runParams.url = tr.server.Addr() + tr.path
