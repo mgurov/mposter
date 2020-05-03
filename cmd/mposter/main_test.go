@@ -85,8 +85,8 @@ func TestShouldReportNon200Statuses(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nB\nC"
-		run.server.PathToResponseCode["/B"] = 500
-		run.server.PathToResponseCode["/C"] = 404
+		run.server.ReturnEmptyResponseWithHttpStatus("/B", 500)
+		run.server.ReturnEmptyResponseWithHttpStatus("/C", 404)
 	})
 
 	result.AssertHttpAccessLog("POST /A\nPOST /B\nPOST /C\n")
@@ -97,7 +97,7 @@ func TestShouldContinueOnError(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nB\nC"
-		run.server.PathToResponseCode["/B"] = 500
+		run.server.ReturnEmptyResponseWithHttpStatus("/B", 500)
 	})
 
 	result.AssertHttpAccessLog("POST /A\nPOST /B\nPOST /C\n")
@@ -108,7 +108,7 @@ func TestShouldStopOnConsecutiveErrors(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nfail\nfail\nD"
-		run.server.PathToResponseCode["/fail"] = 500
+		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
 		run.runParams.stopOnErrorCount = 2
 		run.suppressNoErrCheck = true
 	})
@@ -120,7 +120,7 @@ func TestShouldNotStopOnNonConsecutiveErrors(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nfail\nB\nfail\nC"
-		run.server.PathToResponseCode["/fail"] = 500
+		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
 		run.runParams.stopOnErrorCount = 2
 	})
 
