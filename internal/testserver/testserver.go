@@ -8,18 +8,22 @@ import (
 	"net/http"
 )
 
-// EmptyResponseHandler returns HTTP 204 for any response
-// except for the overrides specified via the PathToResponseCode
-type EmptyResponseHandler struct {
-	PathToResponseCode map[string]int
+type testResponseHandler struct {
+	PathToHandler map[string]func(http.ResponseWriter, *http.Request)
 }
 
-func (s *EmptyResponseHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	responseCode, ok := s.PathToResponseCode[req.URL.Path]
+func (s *testResponseHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	handler, ok := s.PathToHandler[req.URL.Path]
 	if ok {
-		w.WriteHeader(responseCode)
+		handler(w, req)
 	} else {
 		w.WriteHeader(204)
+	}
+}
+
+func MakeEmptyResponseHandler(httpStatus int) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(httpStatus)
 	}
 }
 
@@ -48,12 +52,12 @@ func StartNewTestServerBinding(binding string) *TestServer {
 }
 
 func NewTestServer() TestServer {
-	return TestServer{Binding: ":0", PathToResponseCode: map[string]int{}}
+	return TestServer{Binding: ":0", PathToHandler: map[string]func(http.ResponseWriter, *http.Request){}}
 }
 
 type TestServer struct {
-	Binding            string
-	PathToResponseCode map[string]int
+	Binding       string
+	PathToHandler map[string]func(http.ResponseWriter, *http.Request)
 
 	server  *http.Server
 	addr    *net.TCPAddr
@@ -62,7 +66,7 @@ type TestServer struct {
 
 func (s *TestServer) Start() {
 	s.handler = &loggingHandler{
-		next: &EmptyResponseHandler{s.PathToResponseCode},
+		next: &testResponseHandler{s.PathToHandler},
 	}
 
 	//TODO: does listener have to be stopped explicitly to free up the port?
@@ -88,4 +92,8 @@ func (s TestServer) AccessLog() string {
 
 func (s *TestServer) Close() {
 	s.server.Shutdown(nil)
+}
+
+func (s *TestServer) ReturnEmptyResponseWithHttpStatus(path string, responseCode int) {
+	s.PathToHandler[path] = MakeEmptyResponseHandler(responseCode)
 }
