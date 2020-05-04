@@ -36,6 +36,7 @@ func parseParams(params []string) (runParams, error) {
 	commandLine.StringVar(&result.url, "url", "http://localhost:8080/example/", "url to post to") //TODO: no default and fail if not specified.
 	commandLine.StringVar(&result.fieldSeparator, "separator", "", "row field separator. White space if not specified.")
 	commandLine.IntVar(&result.stopOnErrorCount, "stop-on-err-count", result.stopOnErrorCount, "Stop on consequent error results")
+	commandLine.BoolVar(&result.stopOnFirstError, "stop-on-first-err", true, "stop on very first error at once, disregarding the stop-on-err-count setting")
 	commandLine.DurationVar(&result.timeout, "timeout", 0, "http timeout, 0 (default) meaning no timeout")
 
 	return result, commandLine.Parse(os.Args[1:])
@@ -78,7 +79,11 @@ func run(params runParams) error {
 		}
 	}
 
-	consecutiveErrCount := 0
+	tracker := Tracker{
+		StopOnFirstErr:            params.stopOnFirstError,
+		StopOnConsecutiveErrCount: params.stopOnErrorCount,
+	}
+
 	httpClient := http.Client{
 		Timeout: params.timeout,
 	}
@@ -102,6 +107,9 @@ func run(params runParams) error {
 				} else {
 					fmt.Fprintln(params.output, "ERR", urlErr)
 				}
+				if bailoutErr := tracker.Err(); bailoutErr != nil {
+					return bailoutErr
+				}
 			} else {
 				return fmt.Errorf("Unexpected error posting to %s : %w", urlToCall, err)
 			}
@@ -110,12 +118,11 @@ func run(params runParams) error {
 
 			if resp.StatusCode/100 == 2 {
 				fmt.Fprintf(params.output, "OK\n")
-				consecutiveErrCount = 0
+				tracker.Ok()
 			} else {
 				fmt.Fprintln(params.output, "ERR HTTP", resp.StatusCode)
-				if consecutiveErrCount++; params.stopOnErrorCount > 0 && consecutiveErrCount >= params.stopOnErrorCount {
-					//repeated error count exceeded
-					return fmt.Errorf("Got %d errors in a row, bailing out", consecutiveErrCount)
+				if bailoutErr := tracker.Err(); bailoutErr != nil {
+					return bailoutErr
 				}
 			}
 		}
@@ -141,6 +148,7 @@ type runParams struct {
 	output           io.Writer
 	fieldSeparator   string
 	stopOnErrorCount int
+	stopOnFirstError bool
 	timeout          time.Duration
 }
 
@@ -150,4 +158,29 @@ func newRunParams() runParams {
 		output:           os.Stdout,
 		stopOnErrorCount: 0,
 	}
+}
+
+type Tracker struct {
+	rowNo                     int
+	consecutiveErrCount       int
+	StopOnFirstErr            bool
+	StopOnConsecutiveErrCount int
+}
+
+func (t *Tracker) Ok() {
+	t.rowNo++
+	t.consecutiveErrCount = 0
+}
+
+// Err returns reason to bail out if such
+func (t *Tracker) Err() error {
+	t.rowNo++
+	t.consecutiveErrCount++
+	if t.StopOnFirstErr && t.rowNo == 1 {
+		return fmt.Errorf("error on first call")
+	}
+	if t.StopOnConsecutiveErrCount > 0 && t.consecutiveErrCount >= t.StopOnConsecutiveErrCount {
+		return fmt.Errorf("%d consecutive errors", t.consecutiveErrCount)
+	}
+	return nil
 }

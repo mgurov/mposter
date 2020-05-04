@@ -112,7 +112,7 @@ func TestShouldStopOnConsecutiveErrors(t *testing.T) {
 		run.input = "A\nfail\nfail\nD"
 		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
 		run.runParams.stopOnErrorCount = 2
-		run.suppressNoErrCheck = true
+		run.errCheck = ExpectErrContaining("2 consecutive errors")
 	})
 
 	result.AssertOutput("A OK\nfail ERR HTTP 500\nfail ERR HTTP 500\n")
@@ -129,15 +129,39 @@ func TestShouldNotStopOnNonConsecutiveErrors(t *testing.T) {
 	result.AssertOutput("A OK\nfail ERR HTTP 500\nB OK\nfail ERR HTTP 500\nC OK\n")
 }
 
+func TestShouldStopAtOnceOnFirstError(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "fail\nA"
+		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
+		run.runParams.stopOnErrorCount = 2
+		run.runParams.stopOnFirstError = true
+		run.errCheck = ExpectErrContaining("error on first call")
+	})
+
+	result.AssertOutput("fail ERR HTTP 500\n")
+}
+
+func TestShouldStopAtOnceOnFirstTimeout(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "delay\nA"
+		run.runParams.timeout = 10 * time.Millisecond
+		run.server.RegisterHandler("/delay", DelayResponseHandler(20*time.Millisecond))
+		run.runParams.stopOnErrorCount = 2
+		run.runParams.stopOnFirstError = true
+		run.errCheck = ExpectErrContaining("error on first call")
+	})
+
+	result.AssertOutput("delay ERR Timeout\n")
+}
+
 func TestShouldTimeoutOnTimeout(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nlongB\nC"
 		run.runParams.timeout = 10 * time.Millisecond
-		run.server.RegisterHandler("/longB", func(w http.ResponseWriter, _ *http.Request) {
-			time.Sleep(20 * time.Millisecond)
-			w.WriteHeader(204)
-		})
+		run.server.RegisterHandler("/longB", DelayResponseHandler(20*time.Millisecond))
 		run.runParams.stopOnErrorCount = 2
 	})
 
@@ -167,14 +191,13 @@ func whenRanWithParams(t *testing.T, input, path string, paramsFun func(runParam
 }
 
 type TestRun struct {
-	t                  *testing.T
-	input              string
-	path               string
-	suppressNoErrCheck bool
-	runParams          runParams
-	server             *testserver.TestServer
-	actualOutput       bytes.Buffer
-	actualErr          error
+	t            *testing.T
+	input        string
+	path         string
+	errCheck     func(error, *testing.T)
+	runParams    runParams
+	server       *testserver.TestServer
+	actualOutput bytes.Buffer
 }
 
 func (tr TestRun) ActualServerAccess() string {
@@ -201,6 +224,11 @@ func execute(t *testing.T, adjuster func(*TestRun)) *TestRun {
 		server: &s,
 		path:   "/",
 		t:      t,
+		errCheck: func(err error, tt *testing.T) {
+			if nil != err {
+				tt.Error("Unexpected err from run:", err)
+			}
+		},
 	}
 
 	tr.runParams.output = &tr.actualOutput
@@ -218,10 +246,24 @@ func execute(t *testing.T, adjuster func(*TestRun)) *TestRun {
 		tr.runParams.input = strings.NewReader(tr.input)
 	}
 
-	tr.actualErr = run(tr.runParams)
-	if tr.actualErr != nil && !tr.suppressNoErrCheck {
-		t.Error("Run failed with err:", tr.actualErr)
-	}
+	actualErr := run(tr.runParams)
+
+	tr.errCheck(actualErr, t)
 
 	return &tr
+}
+
+func DelayResponseHandler(delay time.Duration) func(w http.ResponseWriter, _ *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(delay)
+		w.WriteHeader(204)
+	}
+}
+
+func ExpectErrContaining(sub string) func(error, *testing.T) {
+	return func(err error, t *testing.T) {
+		if err == nil || !strings.Contains(err.Error(), sub) {
+			t.Errorf("Expected error containing %s but got %q", sub, err)
+		}
+	}
 }
