@@ -103,7 +103,6 @@ func run(params runParams) error {
 					fmt.Fprintln(params.output, "ERR", urlErr)
 				}
 			} else {
-				log.Printf("wtf %#q", err)
 				return fmt.Errorf("Unexpected error posting to %s : %w", urlToCall, err)
 			}
 		} else {
