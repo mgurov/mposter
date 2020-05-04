@@ -13,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/mgurov/mposter/internal/tracker"
 )
 
 func main() {
@@ -38,6 +40,7 @@ func parseParams(params []string) (runParams, error) {
 	commandLine.IntVar(&result.stopOnErrorCount, "stop-on-err-count", result.stopOnErrorCount, "Stop on consequent error results")
 	commandLine.BoolVar(&result.stopOnFirstError, "stop-on-first-err", true, "stop on very first error at once, disregarding the stop-on-err-count setting")
 	commandLine.DurationVar(&result.timeout, "timeout", 0, "http timeout, 0 (default) meaning no timeout")
+	commandLine.IntVar(&result.logTick, "tick", 1000, "How often to log the summary status to stderr. 0 to only log the final statistics. -1 to disable the logging whatsoever.")
 
 	return result, commandLine.Parse(os.Args[1:])
 }
@@ -79,10 +82,19 @@ func run(params runParams) error {
 		}
 	}
 
-	tracker := Tracker{
+	tracker := tracker.Tracker{
 		StopOnFirstErr:            params.stopOnFirstError,
 		StopOnConsecutiveErrCount: params.stopOnErrorCount,
+		TickLog:                   params.logTick,
 	}
+
+	if params.logTick > -1 {
+		tracker.Logger = log.New(os.Stderr, "", log.LstdFlags)
+	}
+
+	defer func() {
+		tracker.LogDone()
+	}()
 
 	httpClient := http.Client{
 		Timeout: params.timeout,
@@ -126,7 +138,6 @@ func run(params runParams) error {
 				}
 			}
 		}
-
 	}
 
 	return nil
@@ -149,6 +160,7 @@ type runParams struct {
 	fieldSeparator   string
 	stopOnErrorCount int
 	stopOnFirstError bool
+	logTick          int
 	timeout          time.Duration
 }
 
@@ -158,29 +170,4 @@ func newRunParams() runParams {
 		output:           os.Stdout,
 		stopOnErrorCount: 0,
 	}
-}
-
-type Tracker struct {
-	rowNo                     int
-	consecutiveErrCount       int
-	StopOnFirstErr            bool
-	StopOnConsecutiveErrCount int
-}
-
-func (t *Tracker) Ok() {
-	t.rowNo++
-	t.consecutiveErrCount = 0
-}
-
-// Err returns reason to bail out if such
-func (t *Tracker) Err() error {
-	t.rowNo++
-	t.consecutiveErrCount++
-	if t.StopOnFirstErr && t.rowNo == 1 {
-		return fmt.Errorf("error on first call")
-	}
-	if t.StopOnConsecutiveErrCount > 0 && t.consecutiveErrCount >= t.StopOnConsecutiveErrCount {
-		return fmt.Errorf("%d consecutive errors", t.consecutiveErrCount)
-	}
-	return nil
 }
