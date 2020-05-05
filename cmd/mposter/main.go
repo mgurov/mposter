@@ -43,6 +43,9 @@ func parseParams(params []string) (runParams, error) {
 	commandLine.DurationVar(&result.timeout, "timeout", 0, "http timeout, 0 (default) meaning no timeout")
 	commandLine.IntVar(&result.logTick, "tick", 1000, "How often to log the summary status to stderr. 0 to only log the final statistics. -1 to disable the logging whatsoever.")
 	commandLine.BoolVar(&result.logFirstErrStatus, "log-first-err-stats", true, "log status to stderr upon first error encountered")
+	commandLine.StringVar(&result.httpContentType, "http-content-type", "", "specify the value for the Content http request header")
+	commandLine.StringVar(&result.httpAcceptType, "http-accept-type", "*/*", "specify the value for the Accept http request header")
+	commandLine.StringVar(&result.httpMethod, "http-method", "POST", "http method")
 
 	return result, commandLine.Parse(os.Args[1:])
 }
@@ -118,7 +121,18 @@ func run(params runParams) error {
 			continue
 		}
 
-		resp, err := httpClient.Post(urlToCall, "", nil)
+		req, err := http.NewRequest(params.httpMethod, urlToCall, nil)
+		if err != nil {
+			return fmt.Errorf("Unexpected error creating request to %s : %w", urlToCall, err)
+		}
+		if params.httpAcceptType != "" {
+			req.Header.Add("Accept", params.httpAcceptType)
+		}
+		if params.httpContentType != "" {
+			req.Header.Add("Content", params.httpContentType)
+		}
+
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			if urlErr, ok := err.(*url.Error); ok {
 				if urlErr.Timeout() {
@@ -171,6 +185,9 @@ type runParams struct {
 	logFirstErrStatus bool
 	timeout           time.Duration
 	dryRun            bool
+	httpAcceptType    string
+	httpContentType   string
+	httpMethod        string
 }
 
 func newRunParams() runParams {

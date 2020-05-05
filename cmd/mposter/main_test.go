@@ -178,6 +178,18 @@ func TestShouldTimeoutOnTimeout(t *testing.T) {
 	result.AssertOutput("A OK\nlongB ERR Timeout\nC OK\n")
 }
 
+func TestAlternativeHttpVerb(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "A\nB"
+		run.runParams.httpMethod = "DELETE"
+	})
+	result.AssertHttpAccessLog("DELETE /A\n" +
+		"DELETE /B\n")
+	result.AssertOutput("A OK\nB OK\n")
+
+}
+
 func whenRan(t *testing.T, input, path string) string {
 	return whenRanWithParams(t, input, path, func(it runParams) runParams { return it })
 }
@@ -241,7 +253,9 @@ func execute(t *testing.T, adjuster func(*TestRun)) *TestRun {
 		},
 	}
 
+	//TODO: use default run params as a starting point
 	tr.runParams.output = &tr.actualOutput
+	tr.runParams.httpMethod = "POST"
 
 	adjuster(&tr)
 
