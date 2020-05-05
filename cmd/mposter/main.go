@@ -46,6 +46,7 @@ func parseParams(params []string) (runParams, error) {
 	commandLine.StringVar(&result.httpContentType, "http-content-type", "", "specify the value for the Content http request header")
 	commandLine.StringVar(&result.httpAcceptType, "http-accept-type", "*/*", "specify the value for the Accept http request header")
 	commandLine.StringVar(&result.httpMethod, "http-method", "POST", "http method")
+	commandLine.IntVar(&result.skip, "skip", 0, "skip first lines, e.g. header or continue")
 
 	return result, commandLine.Parse(os.Args[1:])
 }
@@ -105,8 +106,17 @@ func run(params runParams) error {
 		Timeout: params.timeout,
 	}
 
+	skipLines := params.skip
+
 	for scanner.Scan() {
 		nextLine := scanner.Text()
+
+		if skipLines > 0 {
+			skipLines--
+			continue
+		}
+
+		//TODO: this one will probably interfere with the skip lines feature.
 		if strings.TrimSpace(nextLine) == "" {
 			continue
 		}
@@ -185,6 +195,7 @@ type runParams struct {
 	logFirstErrStatus bool
 	timeout           time.Duration
 	dryRun            bool
+	skip              int
 	httpAcceptType    string
 	httpContentType   string
 	httpMethod        string

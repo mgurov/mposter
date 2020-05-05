@@ -35,6 +35,18 @@ func TestDryRun(t *testing.T) {
 	result.AssertOutput("A POST http://localhost/A\nB POST http://localhost/B\n")
 }
 
+func TestSkipFirstLines(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "HEADER\nB\nC"
+		run.runParams.skip = 1
+
+	})
+	result.AssertHttpAccessLog("POST /B\n" +
+		"POST /C\n")
+	result.AssertOutput("B OK\nC OK\n")
+}
+
 func TestShouldSkipEmptyLines(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
