@@ -41,6 +41,7 @@ func parseParams(params []string) (runParams, error) {
 	commandLine.BoolVar(&result.stopOnFirstError, "stop-on-first-err", true, "stop on very first error at once, disregarding the stop-on-err-count setting")
 	commandLine.DurationVar(&result.timeout, "timeout", 0, "http timeout, 0 (default) meaning no timeout")
 	commandLine.IntVar(&result.logTick, "tick", 1000, "How often to log the summary status to stderr. 0 to only log the final statistics. -1 to disable the logging whatsoever.")
+	commandLine.BoolVar(&result.logFirstErrStatus, "log-first-err-stats", true, "log status to stderr upon first error encountered")
 
 	return result, commandLine.Parse(os.Args[1:])
 }
@@ -154,14 +155,15 @@ func splitRows(input, fieldSeparators string) []string {
 }
 
 type runParams struct {
-	url              string
-	input            io.Reader
-	output           io.Writer
-	fieldSeparator   string
-	stopOnErrorCount int
-	stopOnFirstError bool
-	logTick          int
-	timeout          time.Duration
+	url               string
+	input             io.Reader
+	output            io.Writer
+	fieldSeparator    string
+	stopOnErrorCount  int
+	stopOnFirstError  bool
+	logTick           int
+	logFirstErrStatus bool
+	timeout           time.Duration
 }
 
 func newRunParams() runParams {

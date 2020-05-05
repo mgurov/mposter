@@ -15,13 +15,14 @@ type Tracker struct {
 	StopOnConsecutiveErrCount int
 	Logger                    *log.Logger
 	TickLog                   int //number of messages to log the current status at
+	LogFirstErr               bool
 }
 
 func (t *Tracker) Ok() {
 	t.rowNo++
 	t.okCount++
 	t.consecutiveErrCount = 0
-	t.maybeLogStatus()
+	t.maybeLogStatus(false)
 }
 
 // Err returns reason to bail out if such
@@ -29,7 +30,7 @@ func (t *Tracker) Err() error {
 	t.rowNo++
 	t.errCount++
 	t.consecutiveErrCount++
-	t.maybeLogStatus()
+	t.maybeLogStatus(t.errCount == 1)
 
 	if t.StopOnFirstErr && t.rowNo == 1 {
 		return fmt.Errorf("error on first call")
@@ -40,8 +41,8 @@ func (t *Tracker) Err() error {
 	return nil
 }
 
-func (t Tracker) maybeLogStatus() {
-	if t.TickLog > 0 && t.rowNo%t.TickLog == 0 {
+func (t Tracker) maybeLogStatus(firstErr bool) {
+	if (t.TickLog > 0 && t.rowNo%t.TickLog == 0) || (firstErr && t.LogFirstErr) {
 		t.LogStatus()
 	}
 }
