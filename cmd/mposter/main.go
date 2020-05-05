@@ -37,6 +37,7 @@ func parseParams(params []string) (runParams, error) {
 	commandLine := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	commandLine.StringVar(&result.url, "url", "http://localhost:8080/example/", "url to post to") //TODO: no default and fail if not specified.
 	commandLine.StringVar(&result.fieldSeparator, "separator", "", "row field separator. White space if not specified.")
+	commandLine.BoolVar(&result.dryRun, "dry-run", false, "prints the http calls instead of executing them if true")
 	commandLine.IntVar(&result.stopOnErrorCount, "stop-on-err-count", result.stopOnErrorCount, "Stop on consequent error results")
 	commandLine.BoolVar(&result.stopOnFirstError, "stop-on-first-err", true, "stop on very first error at once, disregarding the stop-on-err-count setting")
 	commandLine.DurationVar(&result.timeout, "timeout", 0, "http timeout, 0 (default) meaning no timeout")
@@ -112,6 +113,11 @@ func run(params runParams) error {
 			return err
 		}
 
+		if params.dryRun {
+			fmt.Fprintln(params.output, "POST", urlToCall)
+			continue
+		}
+
 		resp, err := httpClient.Post(urlToCall, "", nil)
 		if err != nil {
 			if urlErr, ok := err.(*url.Error); ok {
@@ -164,6 +170,7 @@ type runParams struct {
 	logTick           int
 	logFirstErrStatus bool
 	timeout           time.Duration
+	dryRun            bool
 }
 
 func newRunParams() runParams {
