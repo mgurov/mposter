@@ -4,6 +4,7 @@ mposter is a tool to HTTP-POST massive amounts of data one row at a time
 
 Think of `cat ids.list | while read id; do echo ${id}; curl --fail -XPOST http://host:port/post/${id}; done` with extra conveniences: 
 
+* dry run
 * greppable OK/ERR output
 * progress reported to stderr 
 * rate limiting
@@ -46,13 +47,13 @@ $ mposter --url=http://host:port/path/ --input=ids.list
 ## input --separator 
 
 ````
-$ echo a,b | mposter --url=http://host:port/path
+$ echo a,b | mposter --url=http://host:port/path  --separator=","
 ````
 
 is equivalent to 
 
 ````
-$ echo a b | mposter --url=http://host:port/path --separator=" "
+$ echo a b | mposter --url=http://host:port/path
 ````
 
 ## input --skip-line
@@ -61,10 +62,10 @@ Allows to skip the column names header by setting it to 1 or 2 from the default 
 
 ## --url 
 
-By default, the sole value from the input line is added to the url provided. Go templating allows for more flexible URL structures: 
+By default, the sole value from the input line is added to the url provided. Placeholders allow for more flexible URL structures: 
 
 ````
-$ echo a,b | mposter --url=http://host:port/path/{{.f1}}/subpath/{{.f2}}
+$ echo a,b | mposter --url=http://host:port/path/{{0}}/subpath/{{1}}
 ````
 
 would produce a call to `http://host:port/path/a/subpath/b`
