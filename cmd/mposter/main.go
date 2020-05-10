@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -11,10 +10,10 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/mgurov/mposter/internal/tracker"
+	"github.com/mgurov/mposter/internal/urltemplate"
 )
 
 func main() {
@@ -59,20 +58,16 @@ func run(params runParams) error {
 
 	var paramsToUrl func(string) (string, error)
 	if templated {
-		urlTemplate, err := template.New("url").Parse(params.url)
-		if err != nil {
+
+		f, err := urltemplate.Parse(params.url)
+		if nil != err {
 			return fmt.Errorf("parse url template \"%s\": %w", params.url, err)
 		}
 
 		paramsToUrl = func(line string) (string, error) {
 			row := splitRows(line, params.fieldSeparator)
 			//TODO: explicit param or guessing for whether it's a path or not.
-			result := bytes.Buffer{}
-			if err := urlTemplate.Execute(&result, row); err != nil {
-				return "", fmt.Errorf("building url from %q: %w", row, err)
-			} else {
-				return result.String(), nil
-			}
+			return f(row)
 		}
 	} else {
 		//TODO: no-escape

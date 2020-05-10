@@ -83,7 +83,7 @@ func TestShouldQueryEncode(t *testing.T) {
 func TestMultipleParametersSupport(t *testing.T) {
 	result := execute(t, func(run *TestRun) {
 		run.input = "A 1\nB 2\nC 3"
-		run.path = "/path/{{index . 0}}/sub/{{index . 1}}"
+		run.path = "/path/{{0}}/sub/{{1}}"
 	})
 
 	expectedLog := "POST /path/A/sub/1\n" +
@@ -96,7 +96,7 @@ func TestMultipleParametersSupportCommaSeparated(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A,1\nB,2\nC,3"
-		run.path = "/path/{{index . 0}}/sub/{{index . 1}}"
+		run.path = "/path/{{0}}/sub/{{1}}"
 		run.runParams.fieldSeparator = ","
 	})
 
