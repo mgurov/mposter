@@ -122,7 +122,7 @@ func run(params runParams) error {
 		}
 
 		if params.dryRun {
-			fmt.Fprintln(params.output, "POST", urlToCall)
+			fmt.Fprintln(params.output, params.httpMethod, urlToCall)
 			continue
 		}
 
