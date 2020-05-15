@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/mgurov/mposter/internal/tracker"
 	"github.com/mgurov/mposter/internal/urltemplate"
@@ -104,7 +105,7 @@ func run(params runParams) error {
 	skipLines := params.skip
 
 	for scanner.Scan() {
-		nextLine := scanner.Text()
+		nextLine := strings.TrimSpace(scanner.Text())
 
 		if skipLines > 0 {
 			skipLines--
@@ -112,7 +113,7 @@ func run(params runParams) error {
 		}
 
 		//TODO: this one will probably interfere with the skip lines feature.
-		if strings.TrimSpace(nextLine) == "" {
+		if nextLine == "" {
 			continue
 		}
 		fmt.Fprint(params.output, nextLine, " ")
@@ -175,7 +176,7 @@ func splitRows(input, fieldSeparators string) []string {
 	}
 
 	return strings.FieldsFunc(input, func(it rune) bool {
-		return strings.ContainsRune(fieldSeparators, it)
+		return unicode.IsSpace(it) || strings.ContainsRune(fieldSeparators, it)
 	})
 }
 

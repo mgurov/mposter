@@ -35,6 +35,40 @@ func TestDryRun(t *testing.T) {
 	result.AssertOutput("A POST http://localhost/A\nB POST http://localhost/B\n")
 }
 
+func TestDryRunSpaces(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = " A \nB"
+		run.runParams.url = "http://localhost/"
+		run.runParams.dryRun = true
+	})
+	result.AssertHttpAccessLog("")
+	result.AssertOutput("A POST http://localhost/A\nB POST http://localhost/B\n")
+}
+
+func TestDryRunSpacesAroundCommas(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = " A , B \n C , D "
+		run.runParams.url = "http://localhost/{{0}}/sub/{{1}}"
+		run.runParams.dryRun = true
+		run.runParams.fieldSeparator = ","
+	})
+	result.AssertHttpAccessLog("")
+	result.AssertOutput("A , B POST http://localhost/A/sub/B\nC , D POST http://localhost/C/sub/D\n")
+}
+func TestDryRunOtherVerb(t *testing.T) {
+
+	result := execute(t, func(run *TestRun) {
+		run.input = "A\nB"
+		run.runParams.url = "http://localhost/"
+		run.runParams.dryRun = true
+		run.runParams.httpMethod = "DELETE"
+	})
+	result.AssertHttpAccessLog("")
+	result.AssertOutput("A DELETE http://localhost/A\nB DELETE http://localhost/B\n")
+}
+
 func TestSkipFirstLines(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
@@ -103,6 +137,18 @@ func TestMultipleParametersSupportCommaSeparated(t *testing.T) {
 	result.AssertHttpAccessLog("POST /path/A/sub/1\n" +
 		"POST /path/B/sub/2\n" +
 		"POST /path/C/sub/3\n")
+}
+
+func TestShouldTrimSpacesWhenParameterized(t *testing.T) {
+	result := execute(t, func(run *TestRun) {
+		run.input = "A \n B "
+		run.path = "/path/{{0}}/sub/"
+	})
+
+	expectedLog := "POST /path/A/sub/\n" +
+		"POST /path/B/sub/\n"
+
+	assertions.StringEqual(t, "http log", expectedLog, result.ActualServerAccess())
 }
 
 func TestShouldReportNon200Statuses(t *testing.T) {
