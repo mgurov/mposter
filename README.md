@@ -36,36 +36,36 @@ A
 The following command would sequentually post to `http://host:port/path/1`, `http://host:port/path/A`, `http://host:port/path/3fla%32g`, ... :
 
 ````
-$ cat ids.list | mposter --url=http://host:port/path/
+$ cat ids.list | mposter http://host:port/path/
 ````
 OR 
 
 ````
-$ mposter --url=http://host:port/path/ --input=ids.list
+$ mposter http://host:port/path/ --input=ids.list
 ````
 
 ## input --separator 
 
 ````
-$ echo a,b | mposter --url=http://host:port/path  --separator=","
+$ echo a,b | mposter http://host:port/path{{0}}/sub/{{1}}  --separator=","
 ````
 
 is equivalent to 
 
 ````
-$ echo a b | mposter --url=http://host:port/path
+$ echo a b | mposter http://host:port/path{{0}}/sub/{{1}}
 ````
 
 ## input --skip-line
 
 Allows to skip the column names header by setting it to 1 or 2 from the default 0. Or maybe you want to continue from certain point.
 
-## --url 
+## url 
 
 By default, the sole value from the input line is added to the url provided. Placeholders allow for more flexible URL structures: 
 
 ````
-$ echo a,b | mposter --url=http://host:port/path/{{0}}/subpath/{{1}}
+$ echo a,b | mposter http://host:port/path/{{0}}/subpath/{{1}}
 ````
 
 would produce a call to `http://host:port/path/a/subpath/b`

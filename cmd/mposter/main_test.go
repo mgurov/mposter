@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mgurov/mposter/cmd/mposter/runparams"
 	"github.com/mgurov/mposter/internal/assertions"
 	"github.com/mgurov/mposter/internal/testserver"
 )
@@ -28,8 +29,8 @@ func TestDryRun(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nB"
-		run.runParams.url = "http://localhost/"
-		run.runParams.dryRun = true
+		run.runParams.Url = "http://localhost/"
+		run.runParams.DryRun = true
 	})
 	result.AssertHttpAccessLog("")
 	result.AssertOutput("A POST http://localhost/A\nB POST http://localhost/B\n")
@@ -39,8 +40,8 @@ func TestDryRunSpaces(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = " A \nB"
-		run.runParams.url = "http://localhost/"
-		run.runParams.dryRun = true
+		run.runParams.Url = "http://localhost/"
+		run.runParams.DryRun = true
 	})
 	result.AssertHttpAccessLog("")
 	result.AssertOutput("A POST http://localhost/A\nB POST http://localhost/B\n")
@@ -50,9 +51,9 @@ func TestDryRunSpacesAroundCommas(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = " A , B \n C , D "
-		run.runParams.url = "http://localhost/{{0}}/sub/{{1}}"
-		run.runParams.dryRun = true
-		run.runParams.fieldSeparator = ","
+		run.runParams.Url = "http://localhost/{{0}}/sub/{{1}}"
+		run.runParams.DryRun = true
+		run.runParams.FieldSeparator = ","
 	})
 	result.AssertHttpAccessLog("")
 	result.AssertOutput("A , B POST http://localhost/A/sub/B\nC , D POST http://localhost/C/sub/D\n")
@@ -61,9 +62,9 @@ func TestDryRunOtherVerb(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nB"
-		run.runParams.url = "http://localhost/"
-		run.runParams.dryRun = true
-		run.runParams.httpMethod = "DELETE"
+		run.runParams.Url = "http://localhost/"
+		run.runParams.DryRun = true
+		run.runParams.HttpMethod = "DELETE"
 	})
 	result.AssertHttpAccessLog("")
 	result.AssertOutput("A DELETE http://localhost/A\nB DELETE http://localhost/B\n")
@@ -73,7 +74,7 @@ func TestSkipFirstLines(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "HEADER\nB\nC"
-		run.runParams.skip = 1
+		run.runParams.Skip = 1
 
 	})
 	result.AssertHttpAccessLog("POST /B\n" +
@@ -131,7 +132,7 @@ func TestMultipleParametersSupportCommaSeparated(t *testing.T) {
 	result := execute(t, func(run *TestRun) {
 		run.input = "A,1\nB,2\nC,3"
 		run.path = "/path/{{0}}/sub/{{1}}"
-		run.runParams.fieldSeparator = ","
+		run.runParams.FieldSeparator = ","
 	})
 
 	result.AssertHttpAccessLog("POST /path/A/sub/1\n" +
@@ -179,7 +180,7 @@ func TestShouldStopOnConsecutiveErrors(t *testing.T) {
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nfail\nfail\nD"
 		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
-		run.runParams.stopOnErrorCount = 2
+		run.runParams.StopOnErrorCount = 2
 		run.errCheck = ExpectErrContaining("2 consecutive errors")
 	})
 
@@ -191,7 +192,7 @@ func TestShouldNotStopOnNonConsecutiveErrors(t *testing.T) {
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nfail\nB\nfail\nC"
 		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
-		run.runParams.stopOnErrorCount = 2
+		run.runParams.StopOnErrorCount = 2
 	})
 
 	result.AssertOutput("A OK\nfail ERR HTTP 500\nB OK\nfail ERR HTTP 500\nC OK\n")
@@ -202,8 +203,8 @@ func TestShouldStopAtOnceOnFirstError(t *testing.T) {
 	result := execute(t, func(run *TestRun) {
 		run.input = "fail\nA"
 		run.server.ReturnEmptyResponseWithHttpStatus("/fail", 500)
-		run.runParams.stopOnErrorCount = 2
-		run.runParams.stopOnFirstError = true
+		run.runParams.StopOnErrorCount = 2
+		run.runParams.StopOnFirstError = true
 		run.errCheck = ExpectErrContaining("error on first call")
 	})
 
@@ -214,10 +215,10 @@ func TestShouldStopAtOnceOnFirstTimeout(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "delay\nA"
-		run.runParams.timeout = 10 * time.Millisecond
+		run.runParams.Timeout = 10 * time.Millisecond
 		run.server.RegisterHandler("/delay", DelayResponseHandler(20*time.Millisecond))
-		run.runParams.stopOnErrorCount = 2
-		run.runParams.stopOnFirstError = true
+		run.runParams.StopOnErrorCount = 2
+		run.runParams.StopOnFirstError = true
 		run.errCheck = ExpectErrContaining("error on first call")
 	})
 
@@ -228,9 +229,9 @@ func TestShouldTimeoutOnTimeout(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nlongB\nC"
-		run.runParams.timeout = 10 * time.Millisecond
+		run.runParams.Timeout = 10 * time.Millisecond
 		run.server.RegisterHandler("/longB", DelayResponseHandler(20*time.Millisecond))
-		run.runParams.stopOnErrorCount = 2
+		run.runParams.StopOnErrorCount = 2
 	})
 
 	result.AssertOutput("A OK\nlongB ERR Timeout\nC OK\n")
@@ -240,7 +241,7 @@ func TestAlternativeHttpVerb(t *testing.T) {
 
 	result := execute(t, func(run *TestRun) {
 		run.input = "A\nB"
-		run.runParams.httpMethod = "DELETE"
+		run.runParams.HttpMethod = "DELETE"
 	})
 	result.AssertHttpAccessLog("DELETE /A\n" +
 		"DELETE /B\n")
@@ -249,17 +250,17 @@ func TestAlternativeHttpVerb(t *testing.T) {
 }
 
 func whenRan(t *testing.T, input, path string) string {
-	return whenRanWithParams(t, input, path, func(it runParams) runParams { return it })
+	return whenRanWithParams(t, input, path, func(it runparams.RunParams) runparams.RunParams { return it })
 }
 
-func whenRanWithParams(t *testing.T, input, path string, paramsFun func(runParams) runParams) string {
+func whenRanWithParams(t *testing.T, input, path string, paramsFun func(runparams.RunParams) runparams.RunParams) string {
 	server := testserver.StartNewTestServer()
 	defer server.Shutdown()
 
-	runParams := paramsFun(runParams{
-		url:    server.Addr() + path,
-		input:  strings.NewReader(input),
-		output: ioutil.Discard,
+	runParams := paramsFun(runparams.RunParams{
+		Url:    server.Addr() + path,
+		Input:  strings.NewReader(input),
+		Output: ioutil.Discard,
 	})
 
 	err := run(runParams)
@@ -275,7 +276,7 @@ type TestRun struct {
 	input        string
 	path         string
 	errCheck     func(error, *testing.T)
-	runParams    runParams
+	runParams    runparams.RunParams
 	server       *testserver.TestServer
 	actualOutput bytes.Buffer
 }
@@ -312,20 +313,20 @@ func execute(t *testing.T, adjuster func(*TestRun)) *TestRun {
 	}
 
 	//TODO: use default run params as a starting point
-	tr.runParams.output = &tr.actualOutput
-	tr.runParams.httpMethod = "POST"
+	tr.runParams.Output = &tr.actualOutput
+	tr.runParams.HttpMethod = "POST"
 
 	adjuster(&tr)
 
 	tr.server.Start()
 	defer tr.server.Shutdown()
 
-	if tr.runParams.url == "" {
-		tr.runParams.url = tr.server.Addr() + tr.path
+	if tr.runParams.Url == "" {
+		tr.runParams.Url = tr.server.Addr() + tr.path
 	}
 
-	if tr.runParams.input == nil {
-		tr.runParams.input = strings.NewReader(tr.input)
+	if tr.runParams.Input == nil {
+		tr.runParams.Input = strings.NewReader(tr.input)
 	}
 
 	actualErr := run(tr.runParams)

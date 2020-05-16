@@ -20,7 +20,7 @@ func TestSimpleCalling(t *testing.T) {
 B
 C
 `
-	output := run("mposter --url "+server.Addr()+"/path/", input)
+	output := run("mposter "+server.Addr()+"/path/", input)
 
 	assertions.StringEqual(t, "stdout", "A OK\nB OK\nC OK\n", output)
 
