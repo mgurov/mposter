@@ -243,7 +243,7 @@ func TestAlternativeHttpVerb(t *testing.T) {
 		run.input = "A\nB"
 		run.runParams.HttpMethod = "DELETE"
 	})
-	result.AssertHttpAccessLog("DELETA /A\n" +
+	result.AssertHttpAccessLog("DELETE /A\n" +
 		"DELETE /B\n")
 	result.AssertOutput("A OK\nB OK\n")
 

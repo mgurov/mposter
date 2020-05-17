@@ -28,7 +28,7 @@ jobs:
         ln -s /home/runner/work/mposter/mposter /home/runner/go/src/github.com/mgurov/mposter
 
     - name: Test
-      run: sh ./test.sh
+      run: ./test.sh
 
 
 #     - name: Get dependencies
