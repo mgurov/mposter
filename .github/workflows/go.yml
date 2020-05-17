@@ -36,5 +36,5 @@ jobs:
     # - name: Test
     #   run: go test -v .
     - name: Test
-      run: sh ./tests.sh
+      run: sh ./test.sh
 
