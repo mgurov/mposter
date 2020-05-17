@@ -78,6 +78,10 @@ Supported
 
 Not supported. Might be added in the future as a header/cookie parameter. For now, consider a simple [proxy](https://golang.org/pkg/net/http/httputil/#NewSingleHostReverseProxy) taking care of this concern.
 
+## http verbs
+
+`-http-method DELETE`
+
 ## Rate limiting
 
 `--minimal-duration=5s` would enforce a delay of at least 5 seconds between the start of the consequent calls. 
