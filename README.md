@@ -88,7 +88,7 @@ Not supported. Might be added in the future as a header/cookie parameter. For no
 
 ## Parallelism 
 
-The calls are peformed strictly consequal. Next call is made as soon as the previous finished, unless the rate limiting above kicks in.
+The calls are performed strictly consecutive. Next call is made as soon as the previous finished, unless the rate limiting above kicks in.
 
 ## --tick 100
 
@@ -102,11 +102,11 @@ Every input line would be printed followed by `OK` for http 2xx response from th
 
 ## --stop-on-initial-error 1
 
-A number of initial calls failed to abort the run. No effect whatsover after receving a HTTP 2xx response.
+A number of initial calls failed to abort the run. No effect whatsoever after receiving a HTTP 2xx response.
 
 ## --stop-on-error 0
 
-If set to a number different from 0 would stop the run upon receiving a given number of consequitive call failures.
+If set to a number different from 0 would stop the run upon receiving a given number of consecutive call failures.
 
 ## --stop-on-http-code 4xx
 
