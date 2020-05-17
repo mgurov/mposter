@@ -257,11 +257,10 @@ func whenRanWithParams(t *testing.T, input, path string, paramsFun func(runparam
 	server := testserver.StartNewTestServer()
 	defer server.Shutdown()
 
-	runParams := paramsFun(runparams.RunParams{
-		Url:    server.Addr() + path,
-		Input:  strings.NewReader(input),
-		Output: ioutil.Discard,
-	})
+	runParams := runparams.NewRunParams()
+	runParams.Url = server.Addr() + path
+	runParams.Input = strings.NewReader(input)
+	runParams.Output = ioutil.Discard
 
 	err := run(runParams)
 	if err != nil {
