@@ -5,7 +5,7 @@ mposter is a tool to HTTP-POST massive amounts of data one row at a time
 Think of `cat ids.list | while read id; do echo ${id}; curl --fail -XPOST http://host:port/post/${id}; done` with extra conveniences: 
 
 * dry run
-* greppable OK/ERR output
+* grep-able OK/ERR output
 * progress reported to stderr 
 * rate limiting
 
@@ -80,7 +80,7 @@ Not supported. Might be added in the future as a header/cookie parameter. For no
 
 ## http verbs
 
-`-http-method DELETE`
+`--http-method DELETE`
 
 ## Rate limiting
 
