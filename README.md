@@ -56,7 +56,7 @@ is equivalent to
 $ echo a b | mposter http://host:port/path{{0}}/sub/{{1}}
 ````
 
-## input --skip-line
+## input --skip
 
 Allows to skip the column names header by setting it to 1 or 2 from the default 0. Or maybe you want to continue from certain point.
 
@@ -82,10 +82,6 @@ Not supported. Might be added in the future as a header/cookie parameter. For no
 
 `--http-method DELETE`
 
-## Rate limiting
-
-`--minimal-duration=5s` would enforce a delay of at least 5 seconds between the start of the consequent calls. 
-
 ## Parallelism 
 
 The calls are performed strictly consecutive. Next call is made as soon as the previous finished, unless the rate limiting above kicks in.
@@ -100,18 +96,27 @@ Every input line would be printed followed by `OK` for http 2xx response from th
 
 `--output` defaults to `-`, which means stdout. 
 
-## --stop-on-initial-error 1
+## -stop-on-first-err
 
-A number of initial calls failed to abort the run. No effect whatsoever after receiving a HTTP 2xx response.
+Abort the run if the first call fails.
 
-## --stop-on-error 0
+## --stop-on-error-count 0
 
-If set to a number different from 0 would stop the run upon receiving a given number of consecutive call failures.
+If set to a number different from 0 would stop the run upon receiving the given number of consecutive failures.
 
-## --stop-on-http-code 4xx
+
+# Maybe in the not so distant future
+
+## build/version report
+
+## TODO Rate limiting
+
+`--minimal-duration=5s` would enforce a delay of at least 5 seconds between the start of the consequent calls. 
+
+## TODO --stop-on-http-code 4xx
 
 Comma separated list of http codes to abort the run immediately upon receiving. Comma separated. 4xx means all starting with 4. 
 
-## circuit breaker
+## TODO circuit breaker maybe
 
-Not implemented, but thought of. Would look along the lines of `--break-circuit-open-on-count=10 --break-circuit-delay=1m`
+Would look along the lines of `--break-circuit-open-on-count=10 --break-circuit-delay=1m`
