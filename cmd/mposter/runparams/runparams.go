@@ -95,6 +95,7 @@ func Parse(appname string, args []string) (RunParams, error) {
 
 func configureFlagSet(flagSet *flag.FlagSet, params *RunParams) {
 	flagSet.StringVar(&params.FieldSeparator, "separator", "", "row field separator. White space if not specified.")
+	//TODO: document
 	flagSet.BoolVar(&params.DryRun, "dry-run", params.DryRun, "prints the http calls instead of executing them if true")
 	flagSet.IntVar(&params.StopOnErrorCount, "stop-on-err-count", params.StopOnErrorCount, "Stop on consequent error results")
 	flagSet.BoolVar(&params.StopOnFirstError, "stop-on-first-err", params.StopOnFirstError, "stop on very first error at once, disregarding the stop-on-err-count setting")

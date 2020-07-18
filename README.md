@@ -33,7 +33,7 @@ A
 ...
 ````
 
-The following command would sequentually post to `http://host:port/path/1`, `http://host:port/path/A`, `http://host:port/path/3fla%32g`, ... :
+The following command would sequentually HTTP-`POST` empty body to `http://host:port/path/1`, `http://host:port/path/A`, `http://host:port/path/3fla%32g`, ... :
 
 ````
 $ cat ids.list | mposter http://host:port/path/
@@ -58,7 +58,7 @@ $ echo a b | mposter http://host:port/path{{0}}/sub/{{1}}
 
 ## input --skip
 
-Allows to skip the column names header by setting it to 1 or 2 from the default 0. Or maybe you want to continue from certain point.
+Allows to skip the column names header by setting it to 1 or 2 from the default 0. Or maybe you want to continue from a certain point.
 
 ## url 
 
@@ -78,32 +78,43 @@ Supported
 
 Not supported. Might be added in the future as a header/cookie parameter. For now, consider a simple [proxy](https://golang.org/pkg/net/http/httputil/#NewSingleHostReverseProxy) taking care of this concern.
 
-## http verbs
+## http
 
-`--http-method DELETE`
+`--http-method DELETE --http-content-type 'application/json' --http-accept 'application/json'`
 
 ## Parallelism 
 
 The calls are performed strictly consecutive. Next call is made as soon as the previous finished, unless the rate limiting above kicks in.
 
-## --tick 100
-
-Prints the status every 100 lines (default) to stderr. Set to 0 to disable.
-
 ## --output
 
-Every input line would be printed followed by `OK` for http 2xx response from the target URL or `ERR` and some description of this error if the call wasn't that succesfull. 
+Every input line would be printed out, followed by `OK` for http 2xx response from the target URL, or `ERR` and some description of this error if the call wasn't that succesfull. 
 
-`--output` defaults to `-`, which means stdout. 
+`--output` defaults to `-`, which means stdout.
+
+## --tick 100
+
+Prints the status every 1000 lines (default) to stderr. Set to 0 to disable.
+
+## --log-first-err-stats
+
+A convenience feature doing the unorderly "tick" upon first error encountered. Default on.
 
 ## -stop-on-first-err
 
-Abort the run if the first call fails.
+By default, abort the run if the very first call fails.
 
-## --stop-on-error-count 0
+## --stop-on-err-count
 
-If set to a number different from 0 would stop the run upon receiving the given number of consecutive failures.
+If set to a number greater than 0 would stop the run upon receiving the given number of consecutive failures.
 
+## --dry-run 
+
+Allows visual checking of the calls to be made. Prints the row followed by the HTTP verb and then the URL the call to be made against.
+
+## --timeout 
+
+Http timeout expressed as a Go [duration](https://golang.org/pkg/time/#ParseDuration) (e.g. `1s` `100ms` etc.)
 
 # Maybe in the not so distant future
 
