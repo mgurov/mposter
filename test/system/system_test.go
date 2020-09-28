@@ -2,7 +2,6 @@ package system_test
 
 import (
 	"bytes"
-	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -20,9 +19,20 @@ func TestSimpleCalling(t *testing.T) {
 B
 C
 `
-	output := run("mposter "+server.Addr()+"/path/", input)
+	command := "mposter --tick=2 " + server.Addr() + "/path/"
 
-	assertions.StringEqual(t, "stdout", "A OK\nB OK\nC OK\n", output)
+	runResult := runWithErr(command, input, t)
+
+	assertions.OnlyLinesContaining(t, "errstr", []string{
+		"2 ERR: 0",
+		"Done 3 OK: 3 ERR: 0",
+	}, runResult.stdErr.String())
+
+	if runResult.exitCode != nil {
+		t.Error("Unexpected error code", runResult.exitCode.ExitCode())
+	}
+
+	assertions.StringEqual(t, "stdout", "A OK\nB OK\nC OK\n", runResult.stdOut.String())
 
 	expectedLog := `POST /path/A
 POST /path/B
@@ -34,7 +44,7 @@ POST /path/C
 
 func TestUnknownFlag(t *testing.T) {
 
-	runResult := runWithErr("mposter --unknown-flag", "")
+	runResult := runWithErr("mposter --unknown-flag", "", t)
 
 	if runResult.exitCode == nil {
 		t.Error("expected non-zero exit code but got none")
@@ -46,20 +56,20 @@ func TestUnknownFlag(t *testing.T) {
 	}
 }
 
-func run(command, input string) string {
-	runResult := runWithErr(command, input)
+func run(command, input string, t *testing.T) string {
+	runResult := runWithErr(command, input, t)
 
 	if runResult.stdErr.String() != "" {
-		fmt.Println("Unexpected error output:", runResult.stdErr.String())
+		t.Error("Unexpected error output:", runResult.stdErr.String())
 	}
 	if runResult.exitCode != nil {
-		fmt.Println("Unexpected error code", runResult.exitCode.ExitCode())
+		t.Error("Unexpected error code", runResult.exitCode.ExitCode())
 	}
 
 	return runResult.stdOut.String()
 }
 
-func runWithErr(command, input string) runResultType {
+func runWithErr(command, input string, t *testing.T) runResultType {
 
 	var result runResultType
 
@@ -74,7 +84,7 @@ func runWithErr(command, input string) runResultType {
 		if ee, ok := err.(*exec.ExitError); ok {
 			result.exitCode = ee
 		} else {
-			fmt.Println("Unexpected error: ", err)
+			t.Error("Unexpected error: ", err)
 		}
 	}
 

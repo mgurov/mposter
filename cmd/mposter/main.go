@@ -134,7 +134,7 @@ func makeLineUrlProcessor(params runparams.RunParams) (LineUrlProcessor, LineUrl
 		Params:     params,
 	}
 
-	return caller.Call, tracker.LogDone
+	return caller.Call, func() { caller.Tracker.LogDone() }
 }
 
 func splitRows(input, fieldSeparators string) []string {
